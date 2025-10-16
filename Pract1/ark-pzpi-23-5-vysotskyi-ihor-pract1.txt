@@ -20,7 +20,7 @@
 
 
 
-Виконав:                                                           	              	Прийняв(-ла):
+Виконав:                                                           	              	Прийняв:
 ст. гр. ПЗПІ-23-5                                    	       	     	          Сокорчук І. П.
 Висоцький І. О.
 
@@ -42,300 +42,90 @@
 3. Обґрунтувати кожну рекомендацію та надати детальні пояснення
 4. Проаналізувати вплив рекомендацій на якість та підтримку коду
 1.2 Хід роботи
-1.2.1 Вступ
+1.2.1 Вступ: TypeScript
      TypeScript — це надбудова над JavaScript зі статичною типізацією. Його головна перевага — виявлення помилок ще на етапі розробки, до запуску програми.
      Чому важливе оформлення коду? По-перше, читабельність. Як показано на слайді, код має бути зрозумілим для інших розробників. По-друге, менше помилок — чіткі правила знижують кількість багів. По-третє, єдині стандарти в команді полегшують code review та інтеграцію нового коду.
-1.2.2 Стильові інструменти
-ESLint (.eslintrc.json):
-1. {
-2. "extends": [
-3. "eslint:recommended",
-4. "plugin:@typescript-eslint/recommended"
-5. ],
-6. "rules": {
-7. "no-unused-vars": "error",
-8. "no-console": "warn",
-9. "@typescript-eslint/explicit-function-return-type": "error"
-10. }
-11. }
-Prettier (.prettierrc):
-1. {
-2. "semi": true,
-3. "trailingComma": "all",
-4. "singleQuote": true,
-5. "printWidth": 80,
-6. "tabWidth": 2
-7. }
+1.2.2 Структура проєкту та Іменування
+     Проєкт поділено на каталоги:
+     • components/ — React-компоненти (PascalCase);
+     • hooks/ — користувацькі хуки (camelCase);
+     • services/ — логіка запитів до API;
+     • types/ — TypeScript-типи;
+     • constants/ — константи.
+     Приклад:
+✅ const currentDate = new Date();
+❌ const d = new Date();
+     Конвенції:
+     • PascalCase — для компонентів і класів,
+     • camelCase — для змінних і функцій,
+     • UPPER_CASE — для констант.
 
-     ESLint — це лінтер, який перевіряє код на відповідність стандартам. У прикладі конфігурації ви бачите, що можна налаштувати правила: наприклад, помилка при невикористаних змінних або обов'язкове вказування типів повернення функцій.
-     Prettier — автоматично форматує код. У конфігурації на слайді задані правила: використання крапки з комою, одинарні лапки, максимальна ширина рядка 80 символів. Це забезпечує консистентність стилю у всій команді.
-     Ці інструменти працюють автоматично і економлять час на суперечки про форматування.
-1.2.3 Правила найменування
-     Порівняємо погані та гарні приклади.
-1. // Незрозумілі скорочення
-2. let d = new Date();
-3. let usrData: any;
-4. function calc(a: number, b: number) {
-5. return a + b;
-6. }
-7. class usr {
-8. constructor(public n: string) {}
-9. }
-10. // Магічні числа
-11. if (status === 1) {
-12. // ...
-13. }
-
-1. // Осмислені назви
-2. let currentDate = new Date();
-3. let userData: User;
-
-4. function calculateTotal(price: number, tax: number): number {
-5. return price + tax;
-6. }
-
-7. class UserAccount {
-8. constructor(public name: string) {}
-9. }
-
-10. // Іменовані константи
-11. const STATUS_ACTIVE = 1;
-12. if (status === STATUS_ACTIVE) {
-13. // ...
-14. }
-     Перший — незрозумілі скорочення: змінна d, usrData з типом any, функція calc з параметрами a і b. Також магічне число 1 — що воно означає? Незрозуміло.
-     Другий — осмислені назви: currentDate, userData з типом User, calculateTotal з параметрами price і tax. Магічне число замінено на константу STATUS_ACTIVE. Навіть без коментарів код читається як людська мова.
-     Правило просте: назви мають пояснювати призначення. Це економить час на розуміння коду.
-1.2.4 Строга типізація
-     Строга типізація — основна перевага TypeScript.
-1. function getUser(id) {
-2. return fetch(`/api/users/${id}`)
-3. .then(res => res.json());
-4. }
-
-5. const processData = (data) => {
-6. return data.map(item => item.value);
-7. };
-
-8. let config: any = {
-9. timeout: 5000
-10. };
+1.2.3 Форматування та Інструменти
+     Дотримання єдиного стилю спрощує читання та рев’ю.
+Інструменти:
+     • Prettier — автоматичне форматування;
+     • ESLint — перевірка якості коду;
+     • Husky — git hooks для контролю перед комітами;
+     • SonarQube — аналіз якості в CI/CD.
+     Основні правила: відступ 2 пробіли, крапка з комою обов’язкова, одинарні лапки, рядки до 100 символів.
+1.2.4 React: Типізовані компоненти
+     Інтерфейси визначають структуру даних, допомагаючи уникати помилок.
+     Приклад:
 
 1. interface User {
 2. id: number;
 3. name: string;
 4. email: string;
 5. }
-
-6. async function getUser(id: number): Promise<User> {
-7. const res = await fetch(`/api/users/${id}`);
-8. return res.json();
-9. }
-
-10. const processData = (data: DataItem[]): number[] => {
-11. return data.map(item => item.value);
-12. };
-
-13. interface Config {
-14. timeout: number;
-15. }
-16. const config: Config = { timeout: 5000 };
-
-     Перший— код без типів. Функція getUser не має типу параметра і результату. Змінна config має тип any, що знищує всі переваги TypeScript.
-     Другий— з типами. Інтерфейс User чітко описує структуру даних. Функція має типізований параметр і повертає Promise<User>. Для конфігурації створено окремий інтерфейс.
-     Результат: IDE допомагає з автодоповненням, помилки виявляються під час написання коду, рефакторинг стає безпечним.
-1.2.5 Структура проекту
-     Типова структура TypeScript проекту з React.
-
-src/
-├── components/
-│   ├── Button/
-│   │   ├── Button.tsx
-│   │   ├── Button.test.tsx
-│   │   └── index.ts
-│   └── Header/
-├── hooks/
-│   ├── useAuth.ts
-│   └── useFetch.ts
-├── services/
-│   ├── api.ts
-│   └── auth.service.ts
-├── utils/
-│   └── helpers.ts
-├── types/
-│   ├── user.types.ts
-│   └── api.types.ts
-└── App.tsx
-
-     components — всі React компоненти, кожен в окремій папці з тестами. hooks — користувацькі хуки для повторного використання логіки. services — бізнес-логіка та API запити. utils — допоміжні функції. types — централізоване зберігання TypeScript типів.
-     Основні принципи, показані на слайді: один файл — одна відповідальність, тести поруч з кодом, barrel exports для простих імпортів. Така структура допомагає швидко знайти потрібний код навіть у великому проекті.
-1.2.6 Рефакторинг
-     Single Responsibility — одна функція, одна відповідальність.
-1. function processOrder(order: Order) {
-2. // Валідація
-3. if (!order.items || order.items.length === 0) {
-4. throw new Error('Empty order');
-5. }
-
-6. // Розрахунок
-7. let total = 0;
-8. order.items.forEach(item => {
-9. total += item.price * item.quantity;
-10. });
-11. total = total * 1.2; // ПДВ
-12. // Збереження
-13. database.save(order);
-14. // Email
-15. sendEmail(order.email, `Total: ${total}`);
-16. return total;
-17. }
-
-1. function processOrder(order: Order): number {
-2.   validateOrder(order);
-3.   const total = calculateOrderTotal(order);
-4.   saveOrder(order);
-5.   sendOrderConfirmation(order.email, total);
-6.   return total;
-7. }
-8. 
-9. function validateOrder(order: Order): void {
-10.   if (!order.items?.length) {
-11.     throw new OrderValidationError('Empty order');
-12.   }
-13. }
-14. 
-15. function calculateOrderTotal(order: Order): number {
-16.   const subtotal = order.items.reduce(
-17.     (sum, item) => sum + item.price * item.quantity, 
-18.     0
-19.   );
-20.   return applyTax(subtotal, 0.2);
-21. }
-
-     Перший— функція processOrder робить все: валідацію, розрахунок, збереження в базу, відправку email. Така функція важка для тестування та модифікації.
-     Другий— та сама логіка розділена на окремі функції. Кожна робить щось одне: validateOrder, calculateOrderTotal, saveOrder. Головна функція просто координує їх виклики.
-     Переваги: легко протестувати кожну частину окремо, легко змінити одну операцію без впливу на інші, код стає самодокументованим.
-1.2.7 React компоненти
-     Правильно типізований React компонент.
-
-// Button.tsx
+6. async function getUser(id: number): Promise<User> { ... }
+     IDE надає автодоповнення, а помилки виявляються ще до запуску програми.
+1.2.5 Custom Hooks: Generic типи
+     Типізація пропсів захищає від некоректного використання компонентів.
 1. interface ButtonProps {
-2. onClick: () => void;
-3. children: React.ReactNode;
-4. variant?: 'primary' | 'secondary' | 'danger';
-5. disabled?: boolean;
-6. loading?: boolean;
-7. }
-
-8. export const Button: React.FC<ButtonProps> = ({ 
-9. onClick, 
-10. children, 
-11. variant = 'primary',
-12. disabled = false,
-13. loading = false
-14. }) => {
-15. return (
-16. <button 
-a. onClick={onClick} 
-b. disabled={disabled || loading}
-c. className={`btn btn-${variant}`}
-17. >
-a. {loading ? <Spinner /> : children}
-18. </button>
-19. );
-20. };
-
-     Інтерфейс ButtonProps описує всі властивості: onClick, children, variant з обмеженими значеннями, необов'язкові disabled і loading.
-     У компоненті використано деструктуризацію props із значеннями за замовчуванням. Це робить компонент передбачуваним та зручним у використанні.
-     Такий підхід дає автодоповнення в IDE, запобігає помилкам при використанні компонента, робить код самодокументованим.
-
-1.2.8 Кастомні хуки
-
-     Кастомні хуки — потужний інструмент для повторного використання логіки. Хук useFetch для завантаження даних.
-1. // useFetch.ts
-2. interface UseFetchResult<T> {
-3. data: T | null;
-4. loading: boolean;
-5. error: Error | null;
-6. refetch: () => void;
-7. }
-
-8. function useFetch<T>(url: string): UseFetchResult<T> {
-9. const [data, setData] = useState<T | null>(null);
-10. const [loading, setLoading] = useState(true);
-11. const [error, setError] = useState<Error | null>(null);
-
-12. const fetchData = useCallback(async () => {
-13. try {
-a. setLoading(true);
-b. const response = await fetch(url);
-c. if (!response.ok) throw new Error(`HTTP ${response.status}`);
-d. const json = await response.json();
-e. setData(json);
-14. } catch (err) {
-a. setError(err as Error);
-15. } finally {
-a. setLoading(false);
-16. }
-17. }, [url]);
-
-18. useEffect(() => { fetchData(); }, [fetchData]);
-
-19. return { data, loading, error, refetch: fetchData };
-20. }
-
-     Хук повертає типізований об'єкт з data, loading, error та функцією refetch. Використано дженерики — <T> — що дозволяє працювати з будь-яким типом даних.
-     Всередині — стандартна логіка завантаження з обробкою помилок та станів. useCallback запобігає зайвим перерендерам.
-     Тепер цю логіку можна використовувати в будь-якому компоненті одним рядком: const { data, loading } = useFetch<User>(url).
-
-1.2.9 Обробка помилок
-     Власні класи помилок
-1. class ApiError extends Error {
-2. constructor(
-3. message: string,
-4. public statusCode: number,
-5. public endpoint: string
-6. ) {
-7. super(message);
-8. this.name = 'ApiError';
-9. }
-10. }
-
-11. class ValidationError extends Error {
-12. constructor(
-13. message: string,
-14. public field: string
-15. ) {
-16. super(message);
-17. this.name = 'ValidationError';
-18. }
-19. }
-     Використання
-1. async function fetchUser(id: number): Promise<User> {
-2. try {
-3. const res = await fetch(`/api/users/${id}`);
-
-4. if (!res.ok) {
-5. throw new ApiError(
-6. 'Failed to fetch user',
-7. res.status,
-8. `/api/users/${id}`
-9. );
-10. }
-
-11. return await res.json();
-12. } catch (error) {
-13. if (error instanceof ApiError) {
-14. console.error(`API Error: ${error.endpoint}`);
-15. }
-16. throw error;
-17. }
-18. }
-
-     Правильна обробка помилок критично важлива. На слайді показано два підходи.
-     Перший— власні класи помилок. ApiError зберігає код статусу та endpoint. ValidationError — поле, в якому виникла помилка. Це дає структуровану інформацію про проблему.
-     Другий— використання цих класів. Функція fetchUser перевіряє статус відповіді і викидає ApiError з конкретною інформацією. У блоці catch можна перевірити тип помилки через instanceof і обробити по-різному.
-     Це дає можливість логувати деталі для розробників, але показувати зрозумілі повідомлення користувачам.
+2. label: string;
+3. onClick: () => void;
+4. variant?: 'primary' | 'secondary';
+5. }
+6. const Button: React.FC<ButtonProps> = ({ label, onClick }) => (
+7. <button onClick={onClick}>{label}</button>
+8. );
+     TypeScript підказує правильні типи й значення, забезпечуючи передбачувану поведінку.
+1.2.6 Константи vs Magic Numbers
+     Generic-хуки дозволяють повторно використовувати логіку:
+1. export function useApi<T>(url: string): UseApiResult<T> { ... }
+     Використання:
+const { data, loading } = useApi<User[]>('/api/users');
+Типізація забезпечує безпечну роботу з будь-якими даними.
+1.2.7 Коментарі: JSDoc
+     Коментарі пояснюють чому, а не що робиться:
+1. /**
+2. Обчислює вартість замовлення
+3. @param items - масив товарів
+4. @param coupon - код купону
+5. @returns загальна сума
+6. */
+     JSDoc забезпечує підказки в IDE і робить код самодокументованим.
+1.2.8 Node.js: API Endpoint
+     Типізація запитів і відповідей:
+     interface CreateUserRequest { email: string; name: string; password: string; }
+     interface CreateUserResponse { id: number; email: string; createdAt: string; }
+     Розділення коду на блоки: валідація, бізнес-логіка, відповідь.
+Кожен модуль можна тестувати окремо.
+1.2.9 Архітектура: Розділення логіки
+     Код поділяється на types, hooks, components.
+Це спрощує тестування, масштабування та підтримку.
+Принцип: одна частина — одна відповідальність.
+1.2.10 Висновки: Чистий код\
+     Єдиний стиль коду покращує командну роботу.
+     
+     Типізація забезпечує надійність і зменшує кількість помилок.
+     
+     Модульність і використання custom hooks підвищують масштабованість.
+     
+     Інструменти Prettier, ESLint, Husky автоматизують контроль якості.
+     
+     Чистий код = швидка розробка + менше багів.
+     
 
 
 ВИКОРИСТАНІ ДЖЕРЕЛА
@@ -343,43 +133,45 @@ a. setLoading(false);
      2. ESLint Documentation — eslint.org/docs
      3. Prettier · Opinionated Code Formatter — prettier.io
      4. React TypeScript Cheatsheet — react-typescript-cheatsheet.netlify.app
-     5. Testing Library — testing-library.com
-     6. Clean Code: A Handbook of Agile Software Craftsmanship — Robert C. Martin
-     7. Airbnb JavaScript Style Guide — github.com/airbnb/javascript
+     5. Clean Code: A Handbook of Agile Software Craftsmanship — Robert C. Martin
+     6. Airbnb JavaScript Style Guide — github.com/airbnb/javascript
 
 
 
 ДОДАТОК А
 ВІДЕОЗАПИС
-https://youtu.be/p37Peps71zY
+https://youtu.be/zflXvU4aBZc
+
 
 ДОДАТОК Б
 
 Стр. 1 – Титульна сторінка
 
+Стр. 2 – Вступ: TypeScript
 
-Стр. 2 – Вступ
+Стр. 3 – Структура проєкту та Іменування
 
-Стр. 3 – Стильові інструменти
+Стр. 4 – Форматування та Інструменти
 
-Стр. 4 – Правила найменування
+Стр. 5 – TypeScript: Типізація
+
+Стр. 6 – React: Типізовані компоненти
+
+Стр. 7 – Custom Hooks: Generic типи
+
+Стр. 8 – Константи vs Magic Numbers
+
+Стр. 9 – Коментарі: JSDoc
+
+Стр. 10 – Node.js: API Endpoint
+
+Стр. 11 – Архітектура: Розділення логіки
+
+Стр. 12 – Висновки: Чистий код
+
+Стр. 13 – Використані джерела
 
 
-Стр. 5 – Строга типізація
-
-
-Стр. 6 – Структура проекту
-
-Стр. 7 – Рефакторинг: Single Responsibility
-
-
-Стр. 8 – React: типізовані компоненти
-
-
-Стр. 9 – Обробка помилок
-
-
-Стр. 10 – Тестування та документування
 
 2
 
