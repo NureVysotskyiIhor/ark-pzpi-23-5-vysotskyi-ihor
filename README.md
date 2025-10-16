@@ -4,7 +4,7 @@
 
 Висоцький Ігор
 
-Правила оформлення програмного коду в TypeScript, Node.js та React екосистемі
+Правила оформлення програмного коду для TypeScript у проектах на Node.js та React
 
 Методи рефакторингу коду програмного забезпечення: Replace Magic Number with Symbolic Constant, Self Encapsulate Field, Preserve Whole Object
 
