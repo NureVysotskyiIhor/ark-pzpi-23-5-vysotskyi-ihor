@@ -1,0 +1,394 @@
+﻿МІНІСТЕРСТВО ОСВІТИ І НАУКИ УКРАЇНИ
+ХАРКІВСЬКИЙ НАЦІОНАЛЬНИЙ УНІВЕРСИТЕТ РАДІОЕЛЕКТРОНІКИ
+
+
+
+КАФЕДРА ПРОГРАМНОЇ ІНЖЕНЕРІЇ
+
+
+
+
+
+
+Звіт
+з практичної роботи № 2
+з дисципліни
+«Аналіз та рефакторинг коду»
+
+
+
+
+
+
+
+
+
+Виконав:	Перевірив:
+ст. гр. ПЗПІ-23-5	ст. викладач кафедри ПІ
+Висоцький І. О.	Сокорчук Ігор Петрович
+
+
+
+
+
+
+
+
+
+
+
+
+2025
+
+1 ІСТОРІЯ ЗМІН
+№ДатаВерсія звітуОпис змін та виправлень118.10.20250.1Створено розділ “Історія Змін”
+      
+
+
+
+     2 ЗАВДАННЯ
+1. Студент повинен обрати три методи рефакторингу коду із книги Мартіна Фаулера «Refactoring. Improving the Design of Existing Code».
+2. Навести приклади свого особистого коду (з курсових, лабораторних або інших проєктів), який потребує покращення, та продемонструвати застосування обраних методів.
+3. Кожен метод рефакторингу повинен супроводжуватись:
+o Описом проблеми, яку вирішує даний метод.
+o Кодом до і після застосування методу рефакторингу.
+o Поясненням переваг використаного методу.
+     
+
+     3 ОПИС ВИКОНАНОЇ РОБОТИ
+     3.1 Вступ: Рефакторинг коду
+     Рефакторинг — це процес зміни внутрішньої структури програми без зміни її зовнішньої поведінки. Головна мета рефакторингу — покращення читабельності, підтримуваності та розширюваності коду.
+     Для виконання практичної роботи було обрано три методи рефакторингу:
+     • Replace Magic Number with Symbolic Constant — заміна магічних чисел символьними константами
+     • Self Encapsulate Field — інкапсуляція полів через геттери і сеттери
+     • Preserve Whole Object — передача цілого об'єкта замість окремих полів
+     Всі приклади реалізовані мовою TypeScript на основі коду з власних проєктів.
+     3.2 Метод 1: Replace Magic Number with Symbolic Constant
+     Опис проблеми
+     Магічні числа — це числові літерали в коді, призначення яких незрозуміле без додаткових пояснень. Вони ускладнюють розуміння бізнес-логіки, важко піддаються зміні та підвищують ризик помилок при підтримці коду.
+     Проблеми, які вирішує метод:
+     • Відсутність контексту для числових значень
+     • Складність пошуку всіх використань конкретного значення
+     • Високий ризик помилок при зміні значень
+     • Погіршення читабельності коду
+     Приклад з практики
+     Розглянемо клас для розрахунку вартості товарів у системі електронної комерції.
+     Код ДО рефакторингу:
+1. class OrderCalculator {
+2. calculateTotal(quantity: number, basePrice: number): number {
+3. let total = basePrice * quantity;
+
+4. // Знижка для великих замовлень
+5. if (quantity > 100) {
+6. total = total * 0.85;
+7. }
+
+8. // ПДВ
+9. total = total * 1.20;
+
+10. // Доставка
+11. if (total < 500) {
+12. total += 50;
+13. }
+
+14. return total;
+15. }
+16. }
+     Проблеми: Незрозумілі числа 100, 0.85, 1.20, 500, 50 не мають контексту.
+     Код ПІСЛЯ рефакторингу:
+1. class OrderCalculator {
+2. private static readonly BULK_ORDER_THRESHOLD = 100;
+3. private static readonly BULK_DISCOUNT_RATE = 0.85;
+4. private static readonly VAT_RATE = 1.20;
+5. private static readonly FREE_SHIPPING_THRESHOLD = 500;
+6. private static readonly SHIPPING_COST = 50;
+
+7. calculateTotal(quantity: number, basePrice: number): number {
+8. let total = basePrice * quantity;
+
+9. if (quantity > OrderCalculator.BULK_ORDER_THRESHOLD) {
+10. total = total * OrderCalculator.BULK_DISCOUNT_RATE;
+11. }
+
+12. total = total * OrderCalculator.VAT_RATE;
+
+13. if (total < OrderCalculator.FREE_SHIPPING_THRESHOLD) {
+14. total += OrderCalculator.SHIPPING_COST;
+15. }
+
+16. return total;
+17. }
+18. }
+     Переваги методу
+     1. Читабельність: Код стає самодокументованим, зрозумілий контекст кожного числа
+     2. Підтримуваність: Централізоване управління константами, легко змінювати значення
+     3. Розширюваність: Константи можна винести в конфігураційний файл
+     4. Типобезпека: TypeScript перевіряє типи констант, наявне автодоповнення в IDE
+
+     3.3 Метод 2: Self Encapsulate Field3.1 Структура проєкту
+     Опис проблеми
+     Прямий доступ до полів класу порушує принцип інкапсуляції. Неможливо додати валідацію при зміні значень, складно відстежувати зміни стану об'єкта, відсутній контроль над даними.
+     Проблеми, які вирішує метод:
+     • Порушення принципу інкапсуляції
+     • Відсутність можливості валідації даних
+     • Складність відстеження змін стану об'єкта
+     • Відсутність контролю над коректністю даних
+     Приклад з практики
+     Розглянемо клас користувача в системі управління даними.
+     Код ДО рефакторингу:
+1. class User {
+2. email: string;
+3. age: number;
+4. balance: number;
+
+5. constructor(email: string, age: number) {
+6. this.email = email;
+7. this.age = age;
+8. this.balance = 0;
+9. }
+
+10. addFunds(amount: number): void {
+11. this.balance = this.balance + amount;
+12. }
+13. }
+
+14. // Використання:
+15. const user = new User("test@mail.com", 25);
+16. user.age = -5;        // Помилка: негативний вік
+17. user.balance = -100;  // Помилка: негативний баланс
+18. user.email = "";      // Помилка: порожній email
+     Проблеми: Відсутність валідації, можливість встановити некоректні значення.
+     Код ПІСЛЯ рефакторингу:
+1. class User {
+2. private _email: string;
+3. private _age: number;
+4. private _balance: number;
+
+5. constructor(email: string, age: number) {
+6. this._email = email;
+7. this._age = age;
+8. this._balance = 0;
+9. }
+
+10. get email(): string {
+11. return this._email;
+12. }
+
+13. set email(value: string) {
+14. if (!value || !value.includes('@')) {
+a. throw new Error('Invalid email format');
+15. }
+16. this._email = value;
+17. }
+
+18. get age(): number {
+19. return this._age;
+20. }
+
+21. set age(value: number) {
+22. if (value < 0 || value > 150) {
+a. throw new Error('Age must be between 0 and 150');
+23. }
+24. this._age = value;
+25. }
+
+26. get balance(): number {
+27. return this._balance;
+28. }
+
+29. private set balance(value: number) {
+30. if (value < 0) {
+a. throw new Error('Balance cannot be negative');
+31. }
+32. this._balance = value;
+33. }
+
+34. addFunds(amount: number): void {
+35. if (amount <= 0) {
+a. throw new Error('Amount must be positive');
+36. }
+37. this.balance = this.balance + amount;
+38. }
+39. }
+     Переваги методу
+     1. Валідація: Перевірка коректності даних при кожному присвоєнні
+     2. Інкапсуляція: Приховування внутрішньої реалізації, контроль доступу до даних
+     3. Гнучкість: Можливість додавати логування змін, створювати обчислювані властивості
+     4. Надійність: Менше помилок під час виконання, гарантована цілісність даних
+     
+     3.1 Метод 3: Preserve Whole Object
+
+     Опис проблеми
+     При передачі окремих полів об'єкта в якості параметрів функції виникають довгі списки параметрів, дублюється код витягування даних, ускладнюється додавання нових полів.
+     Проблеми, які вирішує метод:
+     • Довгі списки параметрів функцій
+     • Дублювання коду при витяганні даних з об'єктів
+     • Складність при додаванні нових полів
+     • Погіршення читабельності коду
+     Приклад з практики
+     Розглянемо систему створення звітів про продажі в системі аналітики.
+     Код ДО рефакторингу:
+1. interface Sale {
+2. productName: string;
+3. quantity: number;
+4. price: number;
+5. date: Date;
+6. customerName: string;
+7. customerEmail: string;
+8. region: string;
+9. }
+
+10. class ReportGenerator {
+11. generateSaleReport(
+12. productName: string,
+13. quantity: number,
+14. price: number,
+15. customerName: string,
+16. region: string
+17. ): string {
+18. const total = quantity * price;
+19. return `Product: ${productName}
+20. Quantity: ${quantity}
+21. Total: ${total}
+22. Customer: ${customerName}
+23. Region: ${region}`;
+24. }
+25. }
+
+26. // Використання:
+27. const sale: Sale = {
+28. productName: "Laptop",
+29. quantity: 5,
+30. price: 1000,
+31. date: new Date(),
+32. customerName: "John Doe",
+33. customerEmail: "john@example.com",
+34. region: "Europe"
+35. };
+
+36. const generator = new ReportGenerator();
+37. const report = generator.generateSaleReport(
+38. sale.productName,
+39. sale.quantity,
+40. sale.price,
+41. sale.customerName,
+42. sale.region
+43. );
+     Проблеми: Довгий список параметрів, дублювання витягування даних з об'єкта.
+     Код ПІСЛЯ рефакторингу:
+1. interface Sale {
+2. productName: string;
+3. quantity: number;
+4. price: number;
+5. date: Date;
+6. customerName: string;
+7. customerEmail: string;
+8. region: string;
+9. }
+
+10. class ReportGenerator {
+11. generateSaleReport(sale: Sale): string {
+12. const total = sale.quantity * sale.price;
+13. return `Product: ${sale.productName}
+14. Quantity: ${sale.quantity}
+15. Total: ${total}
+16. Customer: ${sale.customerName}
+17. Region: ${sale.region}`;
+18. }
+
+19. generateDetailedReport(sale: Sale): string {
+20. // Легко додати нові поля без зміни сигнатури
+21. const total = sale.quantity * sale.price;
+22. return `Product: ${sale.productName}
+23. Quantity: ${sale.quantity}
+24. Price: ${sale.price}
+25. Total: ${total}
+26. Date: ${sale.date.toLocaleDateString()}
+27. Customer: ${sale.customerName}
+28. Email: ${sale.customerEmail}
+29. Region: ${sale.region}`;
+30. }
+31. }
+
+32. // Використання:
+33. const sale: Sale = {
+34. productName: "Laptop",
+35. quantity: 5,
+36. price: 1000,
+37. date: new Date(),
+38. customerName: "John Doe",
+39. customerEmail: "john@example.com",
+40. region: "Europe"
+41. };
+
+42. const generator = new ReportGenerator();
+43. const report = generator.generateSaleReport(sale);
+     Переваги методу
+     1. Простота: Коротші сигнатури функцій, менше параметрів для запам'ятовування
+     2. Розширюваність: Легко додавати нові поля без зміни сигнатур функцій
+     3. Типобезпека: TypeScript перевіряє структуру об'єкта, неможливо переплутати параметри
+     4. DRY принцип: Без дублювання коду витягування даних, єдине джерело даних
+     
+
+
+     
+     4 ВИСНОВКИ
+     У ході виконання практичної роботи було застосовано три методи рефакторингу до власного коду, написаного мовою TypeScript.
+     Досягнуті результати:
+     
+     1. Читабельність: Код став самодокументованим та зрозумілішим завдяки використанню символьних констант та передачі цілих об'єктів
+     2. Підтримуваність: Зміни вносяться легше та безпечніше завдяки централізації констант та інкапсуляції полів
+     3. Надійність: Додана валідація даних через геттери і сеттери, що гарантує цілісність даних об'єктів
+     4. Розширюваність: Простіше додавати нові функції без зміни існуючого коду завдяки передачі цілих об'єктів
+     
+     Рекомендації:
+     Застосовувати рефакторинг регулярно, не чекаючи накопичення технічного боргу. TypeScript надає додаткові переваги завдяки статичній типізації та інструментам IDE, що робить процес рефакторингу більш безпечним та ефективним. 
+
+     ВИКОРИСТАНІ ДЖЕРЕЛА 
+     1. Fowler, M. (2018). Refactoring: Improving the Design of Existing Code (2nd Edition). Addison-Wesley Professional. 
+     2. Martin, R. C. (2008). Clean Code: A Handbook of Agile Software Craftsmanship. Prentice Hall. 
+     3. Refactoring.Guru — каталог патернів рефакторингу — https://refactoring.guru/refactoring 
+     4. TypeScript Official Documentation — https://www.typescriptlang.org/docs/ 
+     5. Martin Fowler's Blog — статті про рефакторинг — https://martinfowler.com/ 
+
+     ДОДАТОК А
+     ВІДЕОЗАПИС
+     https://www.youtube.com/watch?v=BEiNZUUxOzg
+
+ДОДАТОК Б
+
+Стр. 1 – Титульна сторінка
+
+Стр. 2 – Метод 1: Replace Magic Number with Symbolic Constant
+
+Стр. 3 – Replace Magic Number: Код ДО рефакторингу
+
+Стр. 4 – Replace Magic Number: Код ПІСЛЯ рефакторингу
+
+Стр. 5 – Replace Magic Number: Переваги
+
+Стр. 6 – Метод 2: Self Encapsulate Field
+
+Стр. 7 – Self Encapsulate Field: Код ДО рефакторингу
+
+Стр. 8 – Self Encapsulate Field: Код ПІСЛЯ рефакторингу
+
+Стр. 9 – Self Encapsulate Field: Переваги
+
+Стр. 10 – Метод 3: Preserve Whole Object
+
+Стр. 11 – Preserve Whole Object: Код ДО рефакторингу
+
+Стр. 12 – Preserve Whole Object: Код ПІСЛЯ рефакторингу
+
+Стр. 13 – Preserve Whole Object: Переваги
+
+Стр. 14 – Висновки
+
+Стр. 15 – Використані джерела
+
+
+     ДОДАТОК В
+
+
+
