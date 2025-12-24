@@ -1,0 +1,90 @@
+{
+    "version": 1,
+    "author": "IoT Kiosk Voting System",
+    "editor": "wokwi",
+    "parts": [
+        {
+            "type": "wokwi-esp32-devkit-v1",
+            "id": "esp",
+            "top": -4.9,
+            "left": -24.2,
+            "attrs": {}
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn1",
+            "top": -51.4,
+            "left": 50,
+            "attrs": { "color": "green", "label": "Rating 1 ⭐" }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn2",
+            "top": -51.4,
+            "left": 100,
+            "attrs": { "color": "blue", "label": "Rating 2 ⭐⭐" }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn3",
+            "top": -51.4,
+            "left": 150,
+            "attrs": { "color": "red", "label": "Rating 3 ⭐⭐⭐" }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn4",
+            "top": -51.4,
+            "left": 200,
+            "attrs": { "color": "yellow", "label": "Rating 4 ⭐⭐⭐⭐" }
+        },
+        {
+            "type": "wokwi-pushbutton",
+            "id": "btn5",
+            "top": -51.4,
+            "left": 250,
+            "attrs": { "color": "orange", "label": "Rating 5 ⭐⭐⭐⭐⭐" }
+        },
+
+        {
+            "type": "wokwi-led",
+            "id": "led_ok",
+            "top": -86.4,
+            "left": 50,
+            "attrs": { "color": "green", "label": "Vote OK" }
+        },
+        {
+            "type": "wokwi-led",
+            "id": "led_error",
+            "top": -86.4,
+            "left": 100,
+            "attrs": { "color": "red", "label": "Error" }
+        }
+    ],
+    "connections": [
+        ["esp:TX0", "$serialMonitor:RX", "", []],
+        ["esp:RX0", "$serialMonitor:TX", "", []],
+        
+        ["btn1:1.l", "esp:GND.1", "black", ["h0"]],
+        ["btn1:2.r", "esp:D14", "green", ["h0"]],
+        
+        ["btn2:1.l", "esp:GND.1", "black", ["h0"]],
+        ["btn2:2.r", "esp:D15", "blue", ["h0"]],
+        
+        ["btn3:1.l", "esp:GND.1", "black", ["h0"]],
+        ["btn3:2.r", "esp:D13", "red", ["h0"]],
+        
+        ["btn4:1.l", "esp:GND.1", "black", ["h0"]],
+        ["btn4:2.r", "esp:D12", "yellow", ["h0"]],
+        
+        ["btn5:1.l", "esp:GND.1", "black", ["h0"]],
+        ["btn5:2.r", "esp:D2", "orange", ["h0"]],
+        
+        ["led_ok:A", "esp:D4", "green", ["h0"]],
+        ["led_ok:C", "esp:GND.3", "black", ["h0"]],
+        
+        ["led_error:A", "esp:D25", "red", ["h0"]],
+        ["led_error:C", "esp:GND.2", "black", ["h0"]]
+    ],
+    "dependencies": {}
+}
