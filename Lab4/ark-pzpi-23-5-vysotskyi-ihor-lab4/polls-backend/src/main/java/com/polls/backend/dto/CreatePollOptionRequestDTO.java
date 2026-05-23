@@ -22,6 +22,5 @@ public class CreatePollOptionRequestDTO {
     private String text;
 
     @PositiveOrZero(message = "orderNum повинен бути >= 0")
-    @NotNull(message = "orderNum не може бути null")
     private Integer orderNum;
 }

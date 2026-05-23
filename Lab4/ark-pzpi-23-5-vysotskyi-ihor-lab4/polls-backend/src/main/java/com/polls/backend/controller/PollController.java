@@ -129,7 +129,7 @@ public class PollController {
      */
     @DeleteMapping("/{id}")
     @Operation(summary = "Видалити голосування")
-    public ResponseEntity<Void> deletePoll(@PathVariable UUID pollId) {
+    public ResponseEntity<Void> deletePoll(@PathVariable("id") UUID pollId) {
         boolean deleted = pollService.deletePoll(pollId, null);
         if (!deleted) {
             return ResponseEntity.notFound().build();
@@ -331,6 +331,27 @@ public class PollController {
 
 
 
+
+    /**
+     * Import polls from CSV
+     * POST /api/polls/import/csv
+     */
+    @PostMapping("/import/csv")
+    @Operation(summary = "Import polls from CSV")
+    public ResponseEntity<Map<String, Object>> importPollsCsv(
+            @RequestBody String csvContent) {
+        try {
+            if (csvContent == null || csvContent.isBlank()) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "CSV content is empty"));
+            }
+            Map<String, Object> result = exportService.importPollsFromCsv(csvContent);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Import failed", "details", e.getMessage()));
+        }
+    }
 
     /**
      * ✅ ВИПРАВЛЕНО: Правильна конвертація Map у PollStatisticsResponseDTO

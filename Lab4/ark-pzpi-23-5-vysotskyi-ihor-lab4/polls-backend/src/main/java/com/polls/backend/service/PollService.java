@@ -24,6 +24,12 @@ public class PollService {
     @Autowired
     private AdminLogRepository adminLogRepository;
 
+    @Autowired
+    private AdminRepository adminRepository;
+
+    @Autowired
+    private AuditService auditService;
+
     // ========================================================================
     // БІЗНЕС-ЛОГІКА: Управління голосуваннями
     // ========================================================================
@@ -128,10 +134,9 @@ public class PollService {
             Poll poll = pollOpt.get();
             poll.setStatus("CLOSED");
             poll.setClosedAt(LocalDateTime.now());
-            poll.setClosedByAdmin(new Admin() {{ setId(adminId); }});
+            poll.setClosedByAdmin(adminRepository.getReferenceById(adminId));
 
-            // Логування дії адміністратора
-            logAdminAction(adminId, "CLOSE_POLL", "Poll", pollId,
+            auditService.log(adminId, "CLOSE_POLL", "Poll", pollId,
                     "Closed poll: " + poll.getTitle());
 
             return pollRepository.save(poll);
@@ -148,7 +153,7 @@ public class PollService {
             Poll poll = pollOpt.get();
             poll.setStatus("ARCHIVED");
 
-            logAdminAction(adminId, "ARCHIVE_POLL", "Poll", pollId,
+            auditService.log(adminId, "ARCHIVE_POLL", "Poll", pollId,
                     "Archived poll: " + poll.getTitle());
 
             return pollRepository.save(poll);
@@ -163,7 +168,7 @@ public class PollService {
         if (pollRepository.existsById(pollId)) {
             Poll poll = pollRepository.findById(pollId).get();
 
-            logAdminAction(adminId, "DELETE_POLL", "Poll", pollId,
+            auditService.log(adminId, "DELETE_POLL", "Poll", pollId,
                     "Deleted poll: " + poll.getTitle());
 
             pollRepository.deleteById(pollId);
@@ -332,15 +337,4 @@ public class PollService {
     // ДОПОМІЖНІ МЕТОДИ
     // ========================================================================
 
-    private void logAdminAction(UUID adminId, String action, String targetType,
-                                UUID targetId, String description) {
-        AdminLog log = new AdminLog();
-        log.setAdmin(new Admin() {{ setId(adminId); }});
-        log.setAction(action);
-        log.setTargetType(targetType);
-        log.setTargetId(targetId);
-        log.setDescription(description);
-        log.setCreatedAt(LocalDateTime.now());
-        adminLogRepository.save(log);
-    }
 }

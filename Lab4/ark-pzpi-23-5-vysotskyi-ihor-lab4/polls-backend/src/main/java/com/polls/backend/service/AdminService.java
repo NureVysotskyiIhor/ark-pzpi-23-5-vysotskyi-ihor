@@ -19,7 +19,10 @@ public class AdminService {
     @Autowired
     private AdminLogRepository adminLogRepository;
 
-    private static final Logger logger = LoggerFactory.getLogger(DeviceFingerprintService.class);
+    @Autowired
+    private AuditService auditService;
+
+    private static final Logger logger = LoggerFactory.getLogger(AdminService.class);
 
     // ========================================================================
     // БІЗНЕС-ЛОГІКА: Управління адміністраторами
@@ -89,7 +92,7 @@ public class AdminService {
         Admin admin = adminOpt.get();
         admin.setIsActive(false);
 
-        logAdminAction(requestingAdminId, "DEACTIVATE_ADMIN", "Admin", adminId,
+        auditService.log(requestingAdminId, "DEACTIVATE_ADMIN", "Admin", adminId,
                 "Deactivated admin: " + admin.getEmail());
 
         return adminRepository.save(admin);
@@ -201,15 +204,4 @@ public class AdminService {
         return logMap;
     }
 
-    private void logAdminAction(UUID adminId, String action, String targetType,
-                                UUID targetId, String description) {
-        AdminLog log = new AdminLog();
-        log.setAdmin(new Admin() {{ setId(adminId); }});
-        log.setAction(action);
-        log.setTargetType(targetType);
-        log.setTargetId(targetId);
-        log.setDescription(description);
-        log.setCreatedAt(LocalDateTime.now());
-        adminLogRepository.save(log);
-    }
 }

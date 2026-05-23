@@ -14,8 +14,8 @@ public class AdminLog {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "admin_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "admin_id", nullable = true)
     private Admin admin;
 
     @Column(nullable = false, length = 50)

@@ -33,7 +33,7 @@ public class PollWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        logger.info("✅ WebSocket клієнт підключився. Session: {}", session.getId());
+        logger.info("WebSocket client connected. Session: {}", session.getId());
         Map<String, Object> welcome = new HashMap<>();
         welcome.put("type", "connection_established");
         welcome.put("message", "Ви підключені до WebSocket сервера");
@@ -45,7 +45,7 @@ public class PollWebSocketHandler extends TextWebSocketHandler {
     public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         try {
             String payload = message.getPayload();
-            logger.debug("📨 Отримано повідомлення: {}", payload);
+            logger.debug("Received message: {}", payload);
 
             Map<String, Object> request = objectMapper.readValue(payload, Map.class);
             String action = (String) request.get("action");
@@ -61,13 +61,13 @@ public class PollWebSocketHandler extends TextWebSocketHandler {
                 sendError(session, "Невідомий action: " + action);
             }
         } catch (Exception e) {
-            logger.error("❌ Помилка при обробці повідомлення", e);
+            logger.error("Error processing message", e);
             sendError(session, "Помилка: " + e.getMessage());
         }
     }
 
     private void handleSubscribe(WebSocketSession session, String topic) throws IOException {
-        logger.info("🔔 Підписка на тему: {} (Session: {})", topic, session.getId());
+        logger.info("Subscribe to topic: {} (Session: {})", topic, session.getId());
         pollSubscriptions.computeIfAbsent(topic, k -> ConcurrentHashMap.newKeySet()).add(session);
 
         Map<String, Object> response = new HashMap<>();
@@ -79,7 +79,7 @@ public class PollWebSocketHandler extends TextWebSocketHandler {
     }
 
     private void handleUnsubscribe(WebSocketSession session, String topic) throws IOException {
-        logger.info("🔕 Відписка від теми: {} (Session: {})", topic, session.getId());
+        logger.info("Unsubscribe from topic: {} (Session: {})", topic, session.getId());
         Set<WebSocketSession> subscribers = pollSubscriptions.get(topic);
         if (subscribers != null) {
             subscribers.remove(session);
@@ -99,20 +99,18 @@ public class PollWebSocketHandler extends TextWebSocketHandler {
         session.sendMessage(new TextMessage(objectMapper.writeValueAsString(pong)));
     }
 
-    // ⭐ УНИВЕРСАЛЬНЫЙ МЕТОД - для любой трансляции
     public void broadcast(String topic, Map<String, Object> data) {
-        System.out.println("🔥 broadcast() called for topic: " + topic);
-        System.out.println("🔥 All subscriptions keys: " + pollSubscriptions.keySet());
+        logger.debug("broadcast() called for topic: {}", topic);
+        logger.debug("Active subscription keys: {}", pollSubscriptions.keySet());
 
         Set<WebSocketSession> subscribers = pollSubscriptions.get(topic);
 
         if (subscribers == null || subscribers.isEmpty()) {
-            System.out.println("⚠️ Немає підписаних на тему: " + topic);
-            logger.warn("⚠️ Немає підписаних на тему: {}", topic);
+            logger.warn("No subscribers for topic: {}", topic);
             return;
         }
 
-        System.out.println("✅ Found " + subscribers.size() + " subscribers for topic: " + topic);
+        logger.debug("Found {} subscribers for topic: {}", subscribers.size(), topic);
 
         try {
             String message = objectMapper.writeValueAsString(data);
@@ -120,17 +118,14 @@ public class PollWebSocketHandler extends TextWebSocketHandler {
             for (WebSocketSession session : new HashSet<>(subscribers)) {
                 if (session.isOpen()) {
                     session.sendMessage(new TextMessage(message));
-                    System.out.println("📤 Відправлено " + topic + " для session: " + session.getId());
-                    logger.info("📤 Відправлено {}: {}", topic, session.getId());
+                    logger.info("Message sent for topic: {}, sessionId: {}", topic, session.getId());
                 } else {
-                    System.out.println("⚠️ Session closed: " + session.getId());
+                    logger.warn("Removing closed session: {}", session.getId());
                     subscribers.remove(session);
                 }
             }
         } catch (Exception e) {
-            System.err.println("❌ Помилка при трансляції на " + topic + ": " + e.getMessage());
-            e.printStackTrace();
-            logger.error("❌ Помилка при трансляції на {}: {}", topic, e.getMessage());
+            logger.error("Broadcast failed for topic: {}", topic, e);
         }
     }
 
@@ -158,12 +153,12 @@ public class PollWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus closeStatus) throws Exception {
-        logger.info("❌ WebSocket клієнт відключився. Session: {}", session.getId());
+        logger.info("WebSocket client disconnected. Session: {}", session.getId());
         pollSubscriptions.values().forEach(set -> set.remove(session));
     }
 
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
-        logger.error("⚠️ WebSocket помилка для {}: {}", session.getId(), exception.getMessage());
+        logger.error("WebSocket error for session {}: {}", session.getId(), exception.getMessage());
     }
 }

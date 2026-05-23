@@ -20,10 +20,6 @@ public interface VoteRepository extends JpaRepository<Vote, UUID> {
     Optional<Vote> findByPollAndFingerprint(Poll poll, DeviceFingerprint fingerprint);
     long countByPoll(Poll poll);
 
-    // ИСПРАВЛЕНО — теперь работает!
-    long countByPollAndOption_Id(Poll poll, UUID optionId);
-
-    // Или ещё надёжнее — явный запрос
     @Query("SELECT COUNT(v) FROM Vote v WHERE v.poll = :poll AND v.option.id = :optionId")
     long countVotesForOption(@Param("poll") Poll poll, @Param("optionId") UUID optionId);
 }

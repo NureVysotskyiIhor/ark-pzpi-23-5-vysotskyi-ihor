@@ -4,11 +4,15 @@ import com.polls.backend.entity.*;
 import com.polls.backend.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
 public class VoteService {
+
+    private static final Logger logger = LoggerFactory.getLogger(VoteService.class);
 
     @Autowired
     private VoteRepository voteRepository;
@@ -21,6 +25,15 @@ public class VoteService {
 
     @Autowired
     private AdminLogRepository adminLogRepository;
+
+    @Autowired
+    private AdminRepository adminRepository;
+
+    @Autowired
+    private PollOptionRepository pollOptionRepository;
+
+    @Autowired
+    private AuditService auditService;
 
     @Autowired
     private PollService pollService;
@@ -65,25 +78,25 @@ public class VoteService {
      * 4. ⭐ Трансльуємо оновлені результати через WebSocket
      */
     public Vote registerVote(UUID pollId, UUID optionId, UUID fingerprintId) {
-        System.out.println("🔥 registerVote called for pollId: " + pollId);
+        logger.info("registerVote called for pollId: {}", pollId);
 
         // Перевірка на повторне голосування
         if (hasAlreadyVoted(pollId, fingerprintId)) {
-            System.out.println("❌ Already voted");
+            logger.warn("Vote rejected: already voted for pollId: {}", pollId);
             return null;
         }
 
         // Перевірка блокування пристрою
         DeviceFingerprint fingerprint = deviceFingerprintRepository.findById(fingerprintId).orElse(null);
         if (fingerprint == null || fingerprint.getIsBlocked()) {
-            System.out.println("❌ Device blocked");
+            logger.warn("Vote rejected: device blocked, fingerprintId: {}", fingerprintId);
             return null;
         }
 
         // Отримуємо варіант
         Poll poll = pollRepository.findById(pollId).orElse(null);
         if (poll == null) {
-            System.out.println("❌ Poll not found");
+            logger.warn("Vote rejected: poll not found, pollId: {}", pollId);
             return null;
         }
 
@@ -94,22 +107,21 @@ public class VoteService {
         vote.setVotedAt(LocalDateTime.now());
 
         if (optionId != null) {
-            vote.setOption(new PollOption() {{ setId(optionId); }});
+            vote.setOption(pollOptionRepository.getReferenceById(optionId));
         }
 
         Vote savedVote = voteRepository.save(vote);
-        System.out.println("🔥 Vote saved: " + savedVote.getId());
+        logger.info("Vote saved: {}", savedVote.getId());
 
-        // ⭐ ТРИГГЕР: Трансляція оновлених результатів через WebSocket
+        // Трансляція оновлених результатів через WebSocket
         try {
             Map<String, Object> stats = pollService.getPollStatistics(pollId);
-            System.out.println("🔥 Stats obtained: " + stats);
+            logger.debug("Poll stats obtained for broadcast: pollId={}", pollId);
 
             webSocketBroadcaster.broadcastPollResults(pollId, stats);
-            System.out.println("🔥 Broadcast called successfully!");
+            logger.info("WebSocket broadcast completed for pollId: {}", pollId);
         } catch (Exception e) {
-            System.err.println("❌ Помилка при трансляції результатів через WebSocket: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Failed to broadcast results via WebSocket for pollId: {}", pollId, e);
         }
 
         return savedVote;
@@ -124,7 +136,7 @@ public class VoteService {
             UUID pollId = vote != null ? vote.getPoll().getId() : null;
 
             voteRepository.deleteById(voteId);
-            logAdminAction(adminId, "DELETE_VOTE", "Vote", voteId, "Deleted vote");
+            auditService.log(adminId, "DELETE_VOTE", "Vote", voteId, "Deleted vote");
 
             // ⭐ ТРИГГЕР: Трансляція оновлених результатів після видалення
             if (pollId != null) {
@@ -132,7 +144,7 @@ public class VoteService {
                     Map<String, Object> stats = pollService.getPollStatistics(pollId);
                     webSocketBroadcaster.broadcastPollResults(pollId, stats);
                 } catch (Exception e) {
-                    System.err.println("❌ Помилка при трансляції результатів через WebSocket: " + e.getMessage());
+                    logger.error("Failed to broadcast results via WebSocket for pollId: {}", pollId, e);
                 }
             }
 
@@ -177,15 +189,4 @@ public class VoteService {
         return anomalyScore > 3.0;
     }
 
-    private void logAdminAction(UUID adminId, String action, String targetType,
-                                UUID targetId, String description) {
-        AdminLog log = new AdminLog();
-        log.setAdmin(new Admin() {{ setId(adminId); }});
-        log.setAction(action);
-        log.setTargetType(targetType);
-        log.setTargetId(targetId);
-        log.setDescription(description);
-        log.setCreatedAt(LocalDateTime.now());
-        adminLogRepository.save(log);
-    }
 }

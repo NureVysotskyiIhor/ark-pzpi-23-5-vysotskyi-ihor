@@ -21,6 +21,12 @@ public class DeviceFingerprintService {
     private AdminLogRepository adminLogRepository;
 
     @Autowired
+    private AdminRepository adminRepository;
+
+    @Autowired
+    private AuditService auditService;
+
+    @Autowired
     private VoteRepository voteRepository;
 
     private static final Logger logger = LoggerFactory.getLogger(DeviceFingerprintService.class);
@@ -63,7 +69,7 @@ public class DeviceFingerprintService {
     public String generateFingerprintHash(String ip, String userAgent) {
         try {
             // Комбінуємо дані пристрою
-            String combined = ip + "|" + userAgent + "|" + System.nanoTime();
+            String combined = ip + "|" + userAgent;
 
             // МАТЕМАТИКА: SHA-256 хеш
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -128,9 +134,9 @@ public class DeviceFingerprintService {
         fp.setIsBlocked(true);
         fp.setBlockReason(reason);
         fp.setBlockedAt(LocalDateTime.now());
-        fp.setBlockedByAdmin(new Admin() {{ setId(adminId); }});
+        fp.setBlockedByAdmin(adminRepository.getReferenceById(adminId));
 
-        logAdminAction(adminId, "BLOCK_DEVICE", "DeviceFingerprint", fingerprintId,
+        auditService.log(adminId, "BLOCK_DEVICE", "DeviceFingerprint", fingerprintId,
                 "Blocked device: " + reason);
 
         return deviceFingerprintRepository.save(fp);
@@ -151,7 +157,7 @@ public class DeviceFingerprintService {
         fp.setBlockedAt(null);
         fp.setBlockedByAdmin(null);
 
-        logAdminAction(adminId, "UNBLOCK_DEVICE", "DeviceFingerprint", fingerprintId,
+        auditService.log(adminId, "UNBLOCK_DEVICE", "DeviceFingerprint", fingerprintId,
                 "Unblocked device");
 
         return deviceFingerprintRepository.save(fp);
@@ -192,15 +198,4 @@ public class DeviceFingerprintService {
     // ДОПОМІЖНІ МЕТОДИ
     // ========================================================================
 
-    private void logAdminAction(UUID adminId, String action, String targetType,
-                                UUID targetId, String description) {
-        AdminLog log = new AdminLog();
-        log.setAdmin(new Admin() {{ setId(adminId); }});
-        log.setAction(action);
-        log.setTargetType(targetType);
-        log.setTargetId(targetId);
-        log.setDescription(description);
-        log.setCreatedAt(LocalDateTime.now());
-        adminLogRepository.save(log);
-    }
 }

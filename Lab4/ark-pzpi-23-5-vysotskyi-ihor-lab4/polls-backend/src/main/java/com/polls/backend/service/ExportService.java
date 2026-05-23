@@ -245,6 +245,85 @@ public class ExportService {
     }
 
 
+    public Map<String, Object> importPollsFromCsv(String csvContent) {
+        int imported = 0;
+        int skipped = 0;
+        int errors = 0;
+        List<String> errorMessages = new ArrayList<>();
+
+        if (csvContent == null || csvContent.isBlank()) {
+            return Map.of("imported", 0, "skipped", 0, "errors", 0, "messages", List.of());
+        }
+
+        String[] lines = csvContent.split("\n");
+
+        for (int i = 1; i < lines.length; i++) {
+            String line = lines[i].trim();
+            if (line.isBlank()) continue;
+
+            try {
+                String[] cols = parseCsvLine(line);
+                if (cols.length < 4) {
+                    errors++;
+                    errorMessages.add("Line " + (i + 1) + ": not enough columns");
+                    continue;
+                }
+
+                String title  = cols[1];
+                String type   = cols[2];
+                String status = cols[3];
+
+                if (!List.of("SINGLE", "MULTIPLE", "RATING", "OPEN").contains(type)) {
+                    skipped++;
+                    errorMessages.add("Line " + (i + 1) + ": unknown type '" + type + "', skipped");
+                    continue;
+                }
+
+                if (!List.of("ACTIVE", "CLOSED", "ARCHIVED").contains(status)) {
+                    skipped++;
+                    errorMessages.add("Line " + (i + 1) + ": unknown status '" + status + "', skipped");
+                    continue;
+                }
+
+                // organizer_fingerprint_id is NOT NULL in DB — skip rows without a valid organizer
+                skipped++;
+                errorMessages.add("Line " + (i + 1) + ": poll import skipped — organizer fingerprint required");
+
+            } catch (Exception e) {
+                errors++;
+                errorMessages.add("Line " + (i + 1) + ": " + e.getMessage());
+            }
+        }
+
+        logger.info("CSV import complete: imported={}, skipped={}, errors={}", imported, skipped, errors);
+        return Map.of("imported", imported, "skipped", skipped, "errors", errors, "messages", errorMessages);
+    }
+
+    private String[] parseCsvLine(String line) {
+        List<String> result = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inQuotes = false;
+
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            if (c == '"') {
+                if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                    current.append('"');
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (c == ',' && !inQuotes) {
+                result.add(current.toString());
+                current = new StringBuilder();
+            } else {
+                current.append(c);
+            }
+        }
+        result.add(current.toString());
+        return result.toArray(new String[0]);
+    }
+
     /**
      * Експорт у простий текстовий формат (для майбутнього PDF)
      */
